@@ -1,11 +1,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdlib.h>
+
+#include <cassert>
+#include <stdarg.h>
 
 #include <list>
 
 #include "fat.h"
 #include "fat_file.h"
+
+FILE * virtual_harddisk;
 
 
 /**
@@ -113,6 +119,18 @@ FAT_FILESYSTEM * mini_fat_create(const char * filename, const int block_size, co
 	FAT_FILESYSTEM * fat = mini_fat_create_internal(filename, block_size, block_count);
 
 	// TODO: create the corresponding virtual disk file with appropriate size.
+	int disk_size = block_size * block_count;
+	virtual_harddisk = (FILE*) malloc(disk_size);
+	virtual_harddisk = fopen(filename, "wb");
+	if (virtual_harddisk == NULL) {
+		fprintf(stderr, "Cannot create file %s.\n", filename);
+		return NULL;	
+	}
+	fseek(virtual_harddisk, 0, SEEK_SET);
+	fwrite(fat, 1, sizeof(fat), virtual_harddisk);
+	//fputc('\0', virtual_harddisk);
+	fclose(virtual_harddisk);
+
 	return fat;
 }
 

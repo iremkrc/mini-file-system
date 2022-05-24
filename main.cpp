@@ -1,5 +1,10 @@
 #include "fat.h"
 #include "fat_file.h"
+#include <stdio.h>
+#include <string.h>
+#include <cassert>
+#include <stdarg.h>
+#include <stdlib.h>
 
 const char * fox = "The quick brown fox jumps over the lazy dog.\n";
 
@@ -192,7 +197,7 @@ void test_read_from_file1(FAT_FILESYSTEM * fs) {
 	printf("Reading the rest of the file.\n");
 	memset(buffer, 0, sizeof(buffer));
 	read = mini_file_read(fs, fd2, 4096, buffer);
-	score(read == 2981); // There's nothing more to read.
+	score(read == 2539); // There's nothing more to read.
 	score(strcmp(buffer+strlen(buffer)-5, "dog.\n") == 0);
 
 

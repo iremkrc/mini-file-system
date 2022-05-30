@@ -11,7 +11,6 @@
 #include "fat.h"
 #include "fat_file.h"
 
-FILE * virtual_harddisk;
 
 
 /**
@@ -106,6 +105,7 @@ static FAT_FILESYSTEM * mini_fat_create_internal(const char * filename, const in
 	fat->block_count = block_count;
 	fat->block_map.resize(fat->block_count, EMPTY_BLOCK); // Set all blocks to empty.
 	fat->block_map[0] = METADATA_BLOCK;
+	fat->virtual_disk = new FILE;
 	return fat;
 }
 
@@ -123,16 +123,13 @@ FAT_FILESYSTEM * mini_fat_create(const char * filename, const int block_size, co
 	FAT_FILESYSTEM * fat = mini_fat_create_internal(filename, block_size, block_count);
 
 	// TODO: create the corresponding virtual disk file with appropriate size.
-	/// ASK: How can we put FAT into the first block?
-	/// ASK: How could we seperate file into blocks?
-	/// ask: byte byte yazarken nasıl yapacağız?
+
 	int disk_size = block_size * block_count;
-	//virtual_harddisk = (FILE*) malloc(disk_size);
-	virtual_harddisk = fopen(filename, "w");
-	fseek(virtual_harddisk, disk_size, SEEK_SET);
+	fat->virtual_disk = fopen(filename, "w");
+	fseek(fat->virtual_disk, disk_size, SEEK_SET);
 	//fwrite(fat, 1, sizeof(fat), virtual_harddisk);
-	fputc('\0', virtual_harddisk);
-	fclose(virtual_harddisk);
+	fputc('\0', fat->virtual_disk);
+	fclose(fat->virtual_disk);
 
 	return fat;
 }
@@ -153,7 +150,26 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 		return false;
 	}
 	// TODO: save all metadata (filesystem metadata, file metadata).
-
+	for(int i = 0; i<fat->block_map.size();i++){
+		if(fat->block_map[i] == METADATA_BLOCK){
+			//fseek(fat_fd, i*fat->block_size, SEEK_SET);
+			fwrite(fat, 1, sizeof(fat), fat_fd);
+		}else if(fat->block_map[i] == FILE_ENTRY_BLOCK){
+			//fseek(fat_fd, i*fat->block_size, SEEK_SET);
+			for(int j = 0; j<fat->files.size();j++){
+				if(fat->files[j]->metadata_block_id == i){
+					fwrite(&(fat->files[j]->size), sizeof(fat->files[j]->size), 1, fat_fd);
+					int a = strlen(fat->files[j]->name);
+					fwrite(&a, sizeof(a), 1, fat_fd);
+					fwrite(&(fat->files[j]->name), 1, sizeof(fat->files[j]->name), fat_fd);
+					for(int k=0; k<fat->files[j]->block_ids.size(); k++){
+						fwrite(&(fat->files[j]->block_ids[k]), sizeof(fat->files[j]->block_ids[k]), 1, fat_fd);
+					}
+					//break;
+				}
+			}
+		}
+	}
 	return true;
 }
 

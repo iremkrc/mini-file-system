@@ -201,7 +201,15 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
 	int written_bytes = 0;
 
 	// TODO: write to file.
+	int new_block_index = mini_fat_allocate_new_block(fs, FILE_DATA_BLOCK);
 
+	FILE *fat_fd = fopen(fs->filename, "w");
+	
+	fwrite(buffer, 1, size, fat_fd);
+
+	open_file->position += size;
+	open_file->file->size += size;
+	written_bytes += size;
 	return written_bytes;
 }
 
@@ -240,13 +248,13 @@ bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offs
 bool mini_file_delete(FAT_FILESYSTEM *fs, const char *filename)
 {
 	// TODO: delete file after checks.
-	for(int i = 0; i < fs->files.size(); i++)
+	for (int i = 0; i < fs->files.size(); i++)
 	{
 		printf(":) For dönüyor sen ne dersen de: '%s'\n", filename);
 		if (strcmp(fs->files[i]->name, filename) == 0)
 		{
 			printf(":) File is found: '%s'\n", filename);
-			if(fs->files[i]->open_handles.size() > 0)
+			if (fs->files[i]->open_handles.size() > 0)
 			{
 				// If the file is open, it cannot be deleted.
 				printf(":) File is open: '%s'\n", filename);
@@ -260,7 +268,6 @@ bool mini_file_delete(FAT_FILESYSTEM *fs, const char *filename)
 				return true;
 			}
 		}
-
 	}
 	return false;
 }

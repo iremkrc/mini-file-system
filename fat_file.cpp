@@ -157,7 +157,6 @@ FAT_OPEN_FILE *mini_file_open(FAT_FILESYSTEM *fs, const char *filename, const bo
 		{
 			if (fd->open_handles[i]->is_write)
 			{
-				fprintf(stderr, "File '%s' is already open in write mode.\n", filename);
 				return NULL;
 			}
 		}
@@ -241,6 +240,27 @@ bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offs
 bool mini_file_delete(FAT_FILESYSTEM *fs, const char *filename)
 {
 	// TODO: delete file after checks.
+	for(int i = 0; i < fs->files.size(); i++)
+	{
+		printf(":) For dönüyor sen ne dersen de: '%s'\n", filename);
+		if (strcmp(fs->files[i]->name, filename) == 0)
+		{
+			printf(":) File is found: '%s'\n", filename);
+			if(fs->files[i]->open_handles.size() > 0)
+			{
+				// If the file is open, it cannot be deleted.
+				printf(":) File is open: '%s'\n", filename);
+				return false;
+			}
+			else
+			{
+				// Mark the blocks of a deleted file as empty on the filesystem.
+				fs->files[i]->metadata_block_id = 0;
+				printf(":) File is deleted: '%s'\n", filename);
+				return true;
+			}
+		}
 
+	}
 	return false;
 }

@@ -63,7 +63,11 @@ int mini_fat_read_in_block(FAT_FILESYSTEM *fs, const int block_id, const int blo
  */
 int mini_fat_find_empty_block(const FAT_FILESYSTEM *fat) {
 	// TODO: find an empty block in fat and return its index.
-
+	for(int i = 0; i < fat->block_count; i++) {
+		if(fat->block_map[i] == 0) {
+			return i;
+		}
+	}
 	return -1;
 }
 
@@ -119,16 +123,15 @@ FAT_FILESYSTEM * mini_fat_create(const char * filename, const int block_size, co
 	FAT_FILESYSTEM * fat = mini_fat_create_internal(filename, block_size, block_count);
 
 	// TODO: create the corresponding virtual disk file with appropriate size.
+	/// ASK: How can we put FAT into the first block?
+	/// ASK: How could we seperate file into blocks?
+	/// ask: byte byte yazarken nasıl yapacağız?
 	int disk_size = block_size * block_count;
-	virtual_harddisk = (FILE*) malloc(disk_size);
-	virtual_harddisk = fopen(filename, "wb");
-	if (virtual_harddisk == NULL) {
-		fprintf(stderr, "Cannot create file %s.\n", filename);
-		return NULL;	
-	}
-	fseek(virtual_harddisk, 0, SEEK_SET);
-	fwrite(fat, 1, sizeof(fat), virtual_harddisk);
-	//fputc('\0', virtual_harddisk);
+	//virtual_harddisk = (FILE*) malloc(disk_size);
+	virtual_harddisk = fopen(filename, "w");
+	fseek(virtual_harddisk, disk_size, SEEK_SET);
+	//fwrite(fat, 1, sizeof(fat), virtual_harddisk);
+	fputc('\0', virtual_harddisk);
 	fclose(virtual_harddisk);
 
 	return fat;

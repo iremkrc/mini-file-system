@@ -201,40 +201,43 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
 	int written_bytes = 0;
 
 	// TODO: write to file.
-	if(open_file->is_write == false)
+	if (open_file->is_write == false)
 	{
 		// Attempting to write to a read-only file.
 		return 0;
 	}
-	if(open_file->file->block_ids.size() == 0 || open_file->position == fs->block_size)
+
+	// File is empty or at end of file. add a new block
+	if (open_file->file->block_ids.size() == 0 || (open_file->position % fs->block_size == 0 && open_file->position != 0))
 	{
-		// File is empty or at end of file.
 		int new_block_index = mini_fat_allocate_new_block(fs, FILE_DATA_BLOCK);
-		if(new_block_index == -1)
+		if (new_block_index == -1)
 		{
 			// No more blocks available.
 			return 0;
 		}
 		open_file->file->block_ids.push_back(new_block_index);
 		open_file->position = 0;
-	}else{
-
-		int block_index = open_file->file->block_ids.size() - 1;
-
-		// File is not empty.
-
 	}
-	int block_index = open_file->file->block_ids[open_file->position / fs->block_size];
+
+	int block_index = open_file->file->block_ids.size() - 1;
+
 	int block_offset = open_file->position % fs->block_size;
 
+	FILE *fat_fd = fopen(fs->filename, "r+");
 
-	FILE *fat_fd = fopen(fs->filename, "w");
-
+	// cursor'ı append yapabilmek için gerekli noktaya getir.
+	mini_file_seek(fs, open_file, block_index * fs->block_size + block_offset, true);
+	//mini_file_seek(fs, open_file, 0, false);
 	fwrite(buffer, 1, size, fat_fd);
+	fclose(fat_fd);
+	// printf("\nBuffer size is %d\n", strlen((char*)buffer));
+	mini_file_seek(fs, open_file, size, false);
 
-	open_file->position += size;
+	//open_file->position += size;
 	open_file->file->size += size;
 	written_bytes += size;
+
 	return written_bytes;
 }
 
@@ -244,12 +247,34 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
  */
 int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size, void *buffer)
 {
+	// cursor ı doğru yere getirdik. Kaldığı yerden kaç byte okuyablir i hesapladık. ancak buffer a en fazla 45 byte yazabildi.
+	// buffer içindeki şeyin sizeı yerine readable byte ları döndük.
 	int read_bytes = 0;
 
 	// TODO: read file.
-	
+	/* Open file for both reading and writing */
+	FILE *fat_fd = fopen(fs->filename, "r+");
 
-	return read_bytes;
+	mini_file_seek(fs, open_file, 0, false);
+	int readable_size = size;
+	/* Read and display data */
+	if (size > open_file->file->size - open_file->position)
+	{
+		readable_size = open_file->file->size - open_file->position;
+	}
+	printf("readable_size is : %d\n\n", readable_size);
+
+	fread(buffer, readable_size, 1, fat_fd);
+	mini_file_seek(fs, open_file, readable_size, false);
+	// open_file->position += size;
+	fclose(fat_fd);
+
+	read_bytes = strlen((char *)buffer);
+
+	printf("read bytes is : %d\n\n", read_bytes);
+	printf(" size is : %d\n\n", size);
+
+	return readable_size;
 }
 
 /**
@@ -261,15 +286,42 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offset, const bool from_start)
 {
 	// TODO: seek and return true.
-	/// TODO: The cursor cannot go beyond the beginning or end of the file. As such, the function should return true on success, and false on failure.
+	/// TODO: The cursor cannot go beyond the beginning or end of the file. As such,
+	// the function should return true on success, and false on failure.
 	FILE *fat_fd = fopen(fs->filename, "r+");
-	int position = open_file->position;
-	if(from_start){
-		fseek(fat_fd, offset, SEEK_SET);
-	}else{
-		fseek(fat_fd, offset, SEEK_CUR);
+	
+	printf("BEFORE !!!!!!!! POSITION: %d\n", open_file->position);
+
+	if (from_start)
+	{
+		if (0 + offset >= 0 && 0 + offset <= open_file->file->size)
+		// if position is available
+		{
+			fseek(fat_fd, offset, SEEK_SET);
+			open_file->position = offset;
+			fclose(fat_fd);
+			printf("AFTER !!!!!!!! POSITION: %d\n", open_file->position);
+
+			return true;
+		}
+	}
+	else
+	{
+		if (((open_file->position + offset) >= 0) && ((open_file->position + offset) <= open_file->file->size))
+		// if position is available
+		{
+			fseek(fat_fd, offset, SEEK_CUR);
+			open_file->position += offset;
+			fclose(fat_fd);
+			printf("AFTER !!!!!!!! POSITION: %d\n", open_file->position);
+
+			return true;
+		}
 	}
 
+	printf("AFTER OUT IF ******* POSITION: %d\n", open_file->position);
+
+	fclose(fat_fd);
 	return false;
 }
 

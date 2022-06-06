@@ -231,6 +231,7 @@ void test_seek(FAT_FILESYSTEM * fs) {
 
 	printf("Reading 45 bytes from beginning file again.\n");
 	memset(buffer, 0, sizeof(buffer));
+	//!!!!!!!!!!!!!!!!!!!!!
 	res = mini_file_seek(fs, fd2, 0, true); // Seek to start
 	score(res);
 	read = mini_file_read(fs, fd2, 45, buffer);
@@ -247,6 +248,7 @@ void test_seek(FAT_FILESYSTEM * fs) {
 
 	printf("Seeking to after file.\n");
 	memset(buffer, 0, sizeof(buffer));
+	printf("asdfghjk ZASXDC????????????????*FVG %d\n", mini_file_size(fs, "file1.txt"));
 	res = mini_file_seek(fs, fd2, mini_file_size(fs, "file1.txt") + 1, true); // Seek to start
 	score(res == false);
 
@@ -267,11 +269,13 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	printf("Relative seek to after file.\n");
 	res = mini_file_seek(fs, fd2, mini_file_size(fs, "file1.txt") - 90 + 1, false);
 	score(res == false);
+	printf("///1 buffer: %s\n", buffer);
 
 	printf("Seek to middle of file and overwrite.\n");
 	res = mini_file_seek(fs, fd1, 45 + 4, true);
 	score(res);
 	int written = mini_file_write(fs ,fd1, 5, "slowy");
+	printf("BEFORE WRITTEN \n");
 	score(written = 5);
 
 	res = mini_file_seek(fs, fd1, -5, false);
@@ -283,8 +287,8 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	res = mini_file_seek(fs, fd2, 45, true);
 	memset(buffer, 0, sizeof(buffer));
 	read = mini_file_read(fs, fd2, 45, buffer);
+	printf("/// buffer: %s\n", buffer);
 	score(strcmp(buffer, "The slowy brown fox jumps over the lazy dog.\n") == 0);
-
 	mini_file_close(fs, fd1);
 	mini_file_close(fs, fd2);
 }
@@ -297,7 +301,7 @@ void test_suite(FAT_FILESYSTEM * fs) {
 	test_read_from_file1(fs);
 
 	test_seek(fs);
-
+	
 	mini_fat_dump(fs);
 }
 

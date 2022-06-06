@@ -201,10 +201,35 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
 	int written_bytes = 0;
 
 	// TODO: write to file.
-	int new_block_index = mini_fat_allocate_new_block(fs, FILE_DATA_BLOCK);
+	if(open_file->is_write == false)
+	{
+		// Attempting to write to a read-only file.
+		return 0;
+	}
+	if(open_file->file->block_ids.size() == 0 || open_file->position == fs->block_size)
+	{
+		// File is empty or at end of file.
+		int new_block_index = mini_fat_allocate_new_block(fs, FILE_DATA_BLOCK);
+		if(new_block_index == -1)
+		{
+			// No more blocks available.
+			return 0;
+		}
+		open_file->file->block_ids.push_back(new_block_index);
+		open_file->position = 0;
+	}else{
+
+		int block_index = open_file->file->block_ids.size() - 1;
+
+		// File is not empty.
+
+	}
+	int block_index = open_file->file->block_ids[open_file->position / fs->block_size];
+	int block_offset = open_file->position % fs->block_size;
+
 
 	FILE *fat_fd = fopen(fs->filename, "w");
-	
+
 	fwrite(buffer, 1, size, fat_fd);
 
 	open_file->position += size;
@@ -222,6 +247,7 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 	int read_bytes = 0;
 
 	// TODO: read file.
+	
 
 	return read_bytes;
 }
@@ -235,6 +261,14 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offset, const bool from_start)
 {
 	// TODO: seek and return true.
+	/// TODO: The cursor cannot go beyond the beginning or end of the file. As such, the function should return true on success, and false on failure.
+	FILE *fat_fd = fopen(fs->filename, "r+");
+	int position = open_file->position;
+	if(from_start){
+		fseek(fat_fd, offset, SEEK_SET);
+	}else{
+		fseek(fat_fd, offset, SEEK_CUR);
+	}
 
 	return false;
 }

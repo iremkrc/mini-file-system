@@ -105,6 +105,7 @@ static FAT_FILESYSTEM * mini_fat_create_internal(const char * filename, const in
 	fat->block_count = block_count;
 	fat->block_map.resize(fat->block_count, EMPTY_BLOCK); // Set all blocks to empty.
 	fat->block_map[0] = METADATA_BLOCK;
+	
 	return fat;
 }
 
@@ -158,6 +159,7 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 
 
 	for(int i : fat->block_map){
+
 		fwrite(&i, sizeof(i), 1, fat_fd);
 	}
 
@@ -165,47 +167,22 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 
 	for(int i = 0; i < fat->files.size(); i++){
 		int metadata_id = fat->files[i]->metadata_block_id;
-		printf("Inside save&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  %d\n",metadata_id);
+		
 		fseek(fat_fd, metadata_id * size, SEEK_SET);
 		fwrite(&(fat->files[i]->size), sizeof(fat->files[i]->size), 1, fat_fd);
-		fseek(fat_fd, -fat->files[i]->size, SEEK_CUR);
-		char stack[fat->files[i]->size+1];
-		fread(stack, sizeof(int), 1, fat_fd);
-		printf("STACK: %s\n", stack);
-		printf("STACKxxxx: %d\n", fat->files[i]->size);
+		
 
 		int length = strlen(fat->files[i]->name);
+		printf("len: %d\n", length);
+		int block_id_count = fat->files[i]->block_ids.size();
 		fwrite(&length, sizeof(length), 1, fat_fd);
 		fwrite(fat->files[i]->name, sizeof(fat->files[i]->name), 1, fat_fd);
+		fwrite(&block_id_count, sizeof(block_id_count), 1, fat_fd); // write length of block ids to be able read in load 
 		for(int j : fat->files[i]->block_ids){
 			fwrite(&j, sizeof(j), 1, fat_fd);
 		}
 	}
-
-	
-
-	/*
-	for(int i = 0; i<fat->block_map.size();i++){
-		if(fat->block_map[i] == METADATA_BLOCK){
-			//fseek(fat_fd, i*fat->block_size, SEEK_SET);
-			fwrite(fat, 1, sizeof(fat), fat_fd);
-		}else if(fat->block_map[i] == FILE_ENTRY_BLOCK){
-			//fseek(fat_fd, i*fat->block_size, SEEK_SET);
-			for(int j = 0; j<fat->files.size();j++){
-				if(fat->files[j]->metadata_block_id == i){
-					fwrite(&(fat->files[j]->size), sizeof(fat->files[j]->size), 1, fat_fd);
-					int a = strlen(fat->files[j]->name);
-					fwrite(&a, sizeof(a), 1, fat_fd);
-					fwrite(&(fat->files[j]->name), 1, sizeof(fat->files[j]->name), fat_fd);
-					for(int k=0; k<fat->files[j]->block_ids.size(); k++){
-						fwrite(&(fat->files[j]->block_ids[k]), sizeof(fat->files[j]->block_ids[k]), 1, fat_fd);
-					}
-					//break;
-				}
-			}
-		}
-	}
-	*/
+	fclose(fat_fd);
 	return true;
 }
 
@@ -217,27 +194,40 @@ FAT_FILESYSTEM * mini_fat_load(const char *filename) {
 	}
 	// TODO: load all metadata (filesystem metadata, file metadata) and create filesystem.
 
-
-
-	int read;
-	fseek(fat_fd, 0, SEEK_SET);
-	fread(&read, 1, sizeof(int), fat_fd);
-	printf("READ AS READING1 : %d\n", read);
-	fread(&read, 1, sizeof(int), fat_fd);
-	printf("READ AS READING2 : %d\n", read);
-
-
-	char buffer[4096];
-	fseek(fat_fd, 0, SEEK_SET);
-	fread(buffer, 1, 4096, fat_fd);
-	printf("HELLO: %s\n", buffer);
-
 	int block_size = 1024, block_count = 10;
 	FAT_FILESYSTEM * fat = mini_fat_create_internal(filename, block_size, block_count);
+	int read;
+	fseek(fat_fd, 0, SEEK_SET);
+	fread(&read, 1, sizeof(int), fat_fd); // block_count
+	fread(&read, 1, sizeof(int), fat_fd); // block_size
 
-	
-
-	
-
+	for(int i=0;i< block_count;i++){
+		fread(&read, 1, sizeof(int), fat_fd); // block_map
+		fat->block_map[i] = read;
+	}
+	int file_count =0;
+	for(int i =0;i<fat->block_count;i++){
+		if(fat->block_map[i]==FILE_ENTRY_BLOCK){
+			fseek(fat_fd, i * block_size, SEEK_SET);
+			fread(&read, 1, sizeof(int), fat_fd); // file size
+			int file_size = read;
+			
+			fread(&read, 1, sizeof(int), fat_fd); // file name length
+			int file_name_length = read;
+			char file_name[file_name_length+1];
+			fread(file_name, 1, sizeof(file_name), fat_fd); // file name
+			file_name[file_name_length] = '\0';
+			FAT_FILE *temp = mini_file_create(file_name);		
+			temp->size = file_size;	
+			fat->files.push_back(temp);
+			
+			int temp_block_id_count = fread(&read, 1, sizeof(int), fat_fd); // block_id_count
+			for(int j=0;j<temp_block_id_count;j++){
+				fread(&read, 1, sizeof(int), fat_fd); // block_id
+				fat->files[file_count]->block_ids.push_back(read);
+			}
+			file_count++;
+		}
+	}
 	return fat;
 }

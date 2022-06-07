@@ -279,18 +279,15 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	score(written = 5);
 
 	res = mini_file_seek(fs, fd1, -5, false);
-	printf("/// res: %d ---- %d ----- %d\n", res, fd1->position, fd2->position);
 	memset(buffer, 0, sizeof(buffer));
 	read = mini_file_read(fs, fd1, 5, buffer);
-	printf("/// the buffer: %s\n", buffer);
 	score(read == 5);
 	score(strcmp(buffer, "slowy") == 0);
 
 	res = mini_file_seek(fs, fd2, 45, true);
 	memset(buffer, 0, sizeof(buffer));
 	read = mini_file_read(fs, fd2, 45, buffer);
-	printf("/// buffer: %s\n", buffer);
-	score(strcmp(buffer, "The slowy brown fox jumps over the lazy dog.\n") != 0);
+	score(strcmp(buffer, "The slowy brown fox jumps over the lazy dog.\n") == 0);
 	mini_file_close(fs, fd1);
 	mini_file_close(fs, fd2);
 }
@@ -317,25 +314,16 @@ int main()
 
 	test_suite(fs);
 
-	printf("**************current score: %d\n\n", current_score);
 
 	if (current_score == total_score) {
 		// Everything is working, now test save/load:
-		printf("3**************current score: %d\n\n", current_score);
 		printf("Saving the FAT filesystem.\n");
 		score(mini_fat_save(fs), 6);
 
 		printf("Loading the FAT filesystem.\n");
 		FAT_FILESYSTEM *loaded_fs = mini_fat_load("fs1.fat");
 		mini_fat_dump(loaded_fs);
-		printf("*************after dump before fail ig: %d\n\n", current_score);
 
-		if(current_score == 79){
-			printf("----- deneme");
-			for(FAT_FILE* i: loaded_fs->files){
-				printf("------- %s\n", i->name);
-			}
-		}
 		
 		score(mini_file_delete(loaded_fs, "file1.txt"));
 		test_suite(loaded_fs);
@@ -343,7 +331,6 @@ int main()
 		printf("Skipping save/load tests as other tests are not passing.\n");
 	}
 
-	printf("2**************current score: %d\n\n", current_score);
 
 	printf("Final score: %d/%d\n", current_score/3*2, 100);
 	return 0;

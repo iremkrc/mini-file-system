@@ -268,11 +268,8 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 		readable_size = open_file->file->size - open_file->position;
 	}
 
-	printf("****position of file: %d\n", ftell(fat_fd));
 	//fseek(fat_fd, 45, SEEK_SET);
-	printf("****position of file: %d\n", ftell(fat_fd));
 	fread(buffer, readable_size, 1, fat_fd);
-	printf("****Buffer inside read: %s\n", buffer);
 	mini_file_seek(fs, open_file, readable_size, false);
 	// open_file->position += size;
 	fclose(fat_fd);
@@ -296,7 +293,6 @@ bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offs
 	// the function should return true on success, and false on failure.
 	FILE *fat_fd = fopen(fs->filename, "r+");
 	fseek(fat_fd, open_file->position, SEEK_SET);
-	printf("???****position of file: %d\n", ftell(fat_fd));
 
 	if (from_start)
 	{
@@ -306,7 +302,6 @@ bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offs
 			fseek(fat_fd, offset, SEEK_SET);
 			open_file->position = offset;
 			//fclose(fat_fd);
-			printf("???****position of file2: %d\n", ftell(fat_fd));
 
 			return true;
 		}
@@ -320,7 +315,6 @@ bool mini_file_seek(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int offs
 			open_file->position += offset;
 			//fclose(fat_fd);
 
-			printf("???****position of file2: %d\n", ftell(fat_fd));
 			return true;
 		}
 	}

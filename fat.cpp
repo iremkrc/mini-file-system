@@ -104,6 +104,7 @@ static FAT_FILESYSTEM * mini_fat_create_internal(const char * filename, const in
 	fat->block_count = block_count;
 	fat->block_map.resize(fat->block_count, EMPTY_BLOCK); // Set all blocks to empty.
 	fat->block_map[0] = METADATA_BLOCK;
+	
 	return fat;
 }
 

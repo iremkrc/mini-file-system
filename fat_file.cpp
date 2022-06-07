@@ -103,6 +103,7 @@ FAT_FILE *mini_file_create_file(FAT_FILESYSTEM *fs, const char *filename)
 	}
 	fs->files.push_back(fd); // Add to filesystem.
 	fd->metadata_block_id = new_block_index;
+	fd->block_ids.push_back(new_block_index);
 	return fd;
 }
 
@@ -201,14 +202,14 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
 	int written_bytes = 0;
 
 	// TODO: write to file.
-	if (open_file->is_write == false)
+	if (!open_file->is_write)
 	{
 		// Attempting to write to a read-only file.
 		return 0;
 	}
 
 	// File is empty or at end of file. add a new block
-	if (open_file->file->block_ids.size() == 0 || (open_file->position % fs->block_size == 0 && open_file->position != 0))
+	if (open_file->file->block_ids.size() == 1 || (open_file->position % fs->block_size == 0 && open_file->position != 0))
 	{
 		int new_block_index = mini_fat_allocate_new_block(fs, FILE_DATA_BLOCK);
 		if (new_block_index == -1)
@@ -336,21 +337,25 @@ bool mini_file_delete(FAT_FILESYSTEM *fs, const char *filename)
 	// TODO: delete file after checks.
 	for (int i = 0; i < fs->files.size(); i++)
 	{
-		printf(":) For dönüyor sen ne dersen de: '%s'\n", filename);
 		if (strcmp(fs->files[i]->name, filename) == 0)
 		{
-			printf(":) File is found: '%s'\n", filename);
 			if (fs->files[i]->open_handles.size() > 0)
 			{
 				// If the file is open, it cannot be deleted.
-				printf(":) File is open: '%s'\n", filename);
 				return false;
 			}
 			else
 			{
 				// Mark the blocks of a deleted file as empty on the filesystem.
-				fs->files[i]->metadata_block_id = 0;
-				printf(":) File is deleted: '%s'\n", filename);
+				//fs->files[i]->metadata_block_id = 0;
+				/// IMPORTANT
+
+				for(int j: fs->files[i]->block_ids)
+				{
+					fs->block_map[j] = 0;
+				}
+				fs->files.erase(fs->files.begin() + i);
+
 				return true;
 			}
 		}

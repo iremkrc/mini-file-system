@@ -105,7 +105,6 @@ static FAT_FILESYSTEM * mini_fat_create_internal(const char * filename, const in
 	fat->block_count = block_count;
 	fat->block_map.resize(fat->block_count, EMPTY_BLOCK); // Set all blocks to empty.
 	fat->block_map[0] = METADATA_BLOCK;
-	fat->virtual_disk = new FILE;
 	return fat;
 }
 
@@ -125,11 +124,11 @@ FAT_FILESYSTEM * mini_fat_create(const char * filename, const int block_size, co
 	// TODO: create the corresponding virtual disk file with appropriate size.
 
 	int disk_size = block_size * block_count;
-	fat->virtual_disk = fopen(filename, "w");
-	fseek(fat->virtual_disk, disk_size, SEEK_SET);
+	FILE* virtual_disk = fopen(filename, "w");
+	fseek(virtual_disk, disk_size, SEEK_SET);
 	//fwrite(fat, 1, sizeof(fat), virtual_harddisk);
-	fputc('\0', fat->virtual_disk);
-	fclose(fat->virtual_disk);
+	fputc('\0', virtual_disk);
+	fclose(virtual_disk);
 
 	return fat;
 }
@@ -150,6 +149,42 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 		return false;
 	}
 	// TODO: save all metadata (filesystem metadata, file metadata).
+	int number_of_blocks = fat->block_count;
+	int size = fat->block_size;
+	fseek(fat_fd, 0, SEEK_SET);
+	fwrite(&number_of_blocks, sizeof(number_of_blocks), 1, fat_fd);
+	fwrite(&size, sizeof(size), 1, fat_fd);
+	
+
+
+	for(int i : fat->block_map){
+		fwrite(&i, sizeof(i), 1, fat_fd);
+	}
+
+	
+
+	for(int i = 0; i < fat->files.size(); i++){
+		int metadata_id = fat->files[i]->metadata_block_id;
+		printf("Inside save&&&&&&&&&&&&&&&&&&&&&&&&&&&&&  %d\n",metadata_id);
+		fseek(fat_fd, metadata_id * size, SEEK_SET);
+		fwrite(&(fat->files[i]->size), sizeof(fat->files[i]->size), 1, fat_fd);
+		fseek(fat_fd, -fat->files[i]->size, SEEK_CUR);
+		char stack[fat->files[i]->size+1];
+		fread(stack, sizeof(int), 1, fat_fd);
+		printf("STACK: %s\n", stack);
+		printf("STACKxxxx: %d\n", fat->files[i]->size);
+
+		int length = strlen(fat->files[i]->name);
+		fwrite(&length, sizeof(length), 1, fat_fd);
+		fwrite(fat->files[i]->name, sizeof(fat->files[i]->name), 1, fat_fd);
+		for(int j : fat->files[i]->block_ids){
+			fwrite(&j, sizeof(j), 1, fat_fd);
+		}
+	}
+
+	
+
+	/*
 	for(int i = 0; i<fat->block_map.size();i++){
 		if(fat->block_map[i] == METADATA_BLOCK){
 			//fseek(fat_fd, i*fat->block_size, SEEK_SET);
@@ -170,6 +205,7 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 			}
 		}
 	}
+	*/
 	return true;
 }
 
@@ -181,8 +217,27 @@ FAT_FILESYSTEM * mini_fat_load(const char *filename) {
 	}
 	// TODO: load all metadata (filesystem metadata, file metadata) and create filesystem.
 
+
+
+	int read;
+	fseek(fat_fd, 0, SEEK_SET);
+	fread(&read, 1, sizeof(int), fat_fd);
+	printf("READ AS READING1 : %d\n", read);
+	fread(&read, 1, sizeof(int), fat_fd);
+	printf("READ AS READING2 : %d\n", read);
+
+
+	char buffer[4096];
+	fseek(fat_fd, 0, SEEK_SET);
+	fread(buffer, 1, 4096, fat_fd);
+	printf("HELLO: %s\n", buffer);
+
 	int block_size = 1024, block_count = 10;
 	FAT_FILESYSTEM * fat = mini_fat_create_internal(filename, block_size, block_count);
+
+	
+
+	
 
 	return fat;
 }

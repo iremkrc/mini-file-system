@@ -21,7 +21,6 @@ typedef struct t_FAT_FILESYSTEM
 
 	std::vector<FAT_FILE *> files;
 
-	FILE *virtual_disk;
 } FAT_FILESYSTEM;
 
 /// Public APIs

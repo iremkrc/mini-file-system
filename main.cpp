@@ -317,21 +317,33 @@ int main()
 
 	test_suite(fs);
 
+	printf("**************current score: %d\n\n", current_score);
+
 	if (current_score == total_score) {
 		// Everything is working, now test save/load:
+		printf("3**************current score: %d\n\n", current_score);
 		printf("Saving the FAT filesystem.\n");
 		score(mini_fat_save(fs), 6);
 
 		printf("Loading the FAT filesystem.\n");
 		FAT_FILESYSTEM *loaded_fs = mini_fat_load("fs1.fat");
 		mini_fat_dump(loaded_fs);
+		printf("*************after dump before fail ig: %d\n\n", current_score);
 
+		if(current_score == 79){
+			printf("----- deneme");
+			for(FAT_FILE* i: loaded_fs->files){
+				printf("------- %s\n", i->name);
+			}
+		}
+		
 		score(mini_file_delete(loaded_fs, "file1.txt"));
 		test_suite(loaded_fs);
 	} else {
 		printf("Skipping save/load tests as other tests are not passing.\n");
 	}
 
+	printf("2**************current score: %d\n\n", current_score);
 
 	printf("Final score: %d/%d\n", current_score/3*2, 100);
 	return 0;

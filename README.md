@@ -14,3 +14,12 @@ In mini_fat_save(fs) functions we wrote the file metadata as follows:
 <size_of_file_data size_of_filename block_count block_ids file_name>
 sample file metadata: <2635 9 2 1 2 "file1.txt">
 
+## Run Mini File System locally
+
+### Step 1: clone the project
+    git clone https://github.com/iremkrc/mini-file-system.git
+    cd mini-file-system
+    
+### Step 2: compile and run the project
+    make
+    ./minifs

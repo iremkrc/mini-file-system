@@ -248,7 +248,6 @@ void test_seek(FAT_FILESYSTEM * fs) {
 
 	printf("Seeking to after file.\n");
 	memset(buffer, 0, sizeof(buffer));
-	printf("asdfghjk ZASXDC????????????????*FVG %d\n", mini_file_size(fs, "file1.txt"));
 	res = mini_file_seek(fs, fd2, mini_file_size(fs, "file1.txt") + 1, true); // Seek to start
 	score(res == false);
 
@@ -258,7 +257,6 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	res = mini_file_seek(fs, fd2, -45, false);
 	score(res == true);
 	read = mini_file_read(fs, fd2, 45, buffer);
-	printf("%s\n", buffer);
 	score(read == 45);
 	score(strcmp(buffer, fox) == 0);
 
@@ -269,28 +267,28 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	printf("Relative seek to after file.\n");
 	res = mini_file_seek(fs, fd2, mini_file_size(fs, "file1.txt") - 90 + 1, false);
 	score(res == false);
-	printf("///1 buffer: %s\n", buffer);
 
 	printf("Seek to middle of file and overwrite.\n");
 	res = mini_file_seek(fs, fd1, 45 + 4, true);
 	score(res);
 	int written = mini_file_write(fs ,fd1, 5, "slowy");
-	printf("BEFORE WRITTEN \n");
 	score(written = 5);
 
+	printf("Current position of fd1: %d\n", fd1->position);
 	res = mini_file_seek(fs, fd1, -5, false);
-	printf("/// res: %d ---- %d ----- %d\n", res, fd1->position, fd2->position);
+	printf("After position of fd1: %d\n", fd1->position);
 	memset(buffer, 0, sizeof(buffer));
+	// !!!
+	
 	read = mini_file_read(fs, fd1, 5, buffer);
-	printf("/// the buffer: %s\n", buffer);
 	score(read == 5);
 	score(strcmp(buffer, "slowy") == 0);
 
 	res = mini_file_seek(fs, fd2, 45, true);
 	memset(buffer, 0, sizeof(buffer));
 	read = mini_file_read(fs, fd2, 45, buffer);
-	printf("/// buffer: %s\n", buffer);
-	score(strcmp(buffer, "The slowy brown fox jumps over the lazy dog.\n") != 0);
+	printf("****buffer: %s\n", buffer);
+	score(strcmp(buffer, "The slowy brown fox jumps over the lazy dog.\n") == 0);
 	mini_file_close(fs, fd1);
 	mini_file_close(fs, fd2);
 }
@@ -317,8 +315,7 @@ int main()
 
 	test_suite(fs);
 
-	printf("**************current score: %d\n\n", current_score);
-
+	
 	if (current_score == total_score) {
 		// Everything is working, now test save/load:
 		printf("3**************current score: %d\n\n", current_score);
@@ -328,8 +325,7 @@ int main()
 		printf("Loading the FAT filesystem.\n");
 		FAT_FILESYSTEM *loaded_fs = mini_fat_load("fs1.fat");
 		mini_fat_dump(loaded_fs);
-		printf("*************after dump before fail ig: %d\n\n", current_score);
-
+	
 		if(current_score == 79){
 			printf("----- deneme");
 			for(FAT_FILE* i: loaded_fs->files){
@@ -343,7 +339,6 @@ int main()
 		printf("Skipping save/load tests as other tests are not passing.\n");
 	}
 
-	printf("2**************current score: %d\n\n", current_score);
 
 	printf("Final score: %d/%d\n", current_score/3*2, 100);
 	return 0;

@@ -158,7 +158,6 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
 
 
     for(int i : fat->block_map){
-
         fwrite(&i, sizeof(i), 1, fat_fd);
     }
 
@@ -172,14 +171,14 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
         
 
         int length = strlen(fat->files[i]->name);
-        printf("len: %d\n", length);
-        int block_id_count = fat->files[i]->block_ids.size();
         fwrite(&length, sizeof(length), 1, fat_fd);
-        fwrite(fat->files[i]->name, sizeof(fat->files[i]->name), 1, fat_fd);
+        int block_id_count = fat->files[i]->block_ids.size();
         fwrite(&block_id_count, sizeof(block_id_count), 1, fat_fd); // write length of block ids to be able read in load 
+        
         for(int j : fat->files[i]->block_ids){
             fwrite(&j, sizeof(j), 1, fat_fd);
         }
+        fwrite(fat->files[i]->name, sizeof(fat->files[i]->name), 1, fat_fd);
     }
     fclose(fat_fd);
     return true;
@@ -213,18 +212,30 @@ FAT_FILESYSTEM * mini_fat_load(const char *filename) {
             
             fread(&read, 1, sizeof(int), fat_fd); // file name length
             int file_name_length = read;
+
+            fread(&read, 1, sizeof(int), fat_fd); // block_id_count
+            int temp_block_id_count = read;
+
+            std::vector<int> block_ids_info;
+
+            for(int j=0;j<temp_block_id_count;j++){
+                fread(&read, 1, sizeof(int), fat_fd); // block_id
+                block_ids_info.push_back(read);
+            }
+
             char file_name[file_name_length+1];
             fread(file_name, 1, sizeof(file_name), fat_fd); // file name
             file_name[file_name_length] = '\0';
+
             FAT_FILE *temp = mini_file_create(file_name);       
             temp->size = file_size; 
             fat->files.push_back(temp);
-            
-            int temp_block_id_count = fread(&read, 1, sizeof(int), fat_fd); // block_id_count
-            for(int j=0;j<temp_block_id_count;j++){
-                fread(&read, 1, sizeof(int), fat_fd); // block_id
-                fat->files[file_count]->block_ids.push_back(read);
+
+            fat->files[file_count]->metadata_block_id = block_ids_info[0];
+            for(int k: block_ids_info){
+                fat->files[file_count]->block_ids.push_back(k);
             }
+            
             file_count++;
         }
     }

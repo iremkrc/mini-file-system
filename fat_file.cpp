@@ -167,7 +167,6 @@ FAT_OPEN_FILE *mini_file_open(FAT_FILESYSTEM *fs, const char *filename, const bo
 	// TODO: assign open_file fields.
 	open_file->is_write = is_write;
 	open_file->file = fd;
-	/// ASK: what is the position of the file?
 	open_file->position = 0;
 
 	// Add to list of open handles for fd:
@@ -229,16 +228,11 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
 	fseek(fat_fd, open_file->position, SEEK_SET);
 
 
-	// cursor'ı append yapabilmek için gerekli noktaya getir.
-	//mini_file_seek(fs, open_file, block_index * fs->block_size + block_offset, true);
-	//mini_file_seek(fs, open_file, 0, false);
-	//fwrite(buffer, 1, size, fat_fd);
 	fprintf(fat_fd, (char*) buffer);
 	fclose(fat_fd);
-	// printf("\nBuffer size is %d\n", strlen((char*)buffer));
+
 	mini_file_seek(fs, open_file, size, false);
 
-	//open_file->position += size;
 	open_file->file->size += size;
 	written_bytes += size;
 
@@ -251,8 +245,7 @@ int mini_file_write(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size
  */
 int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size, void *buffer)
 {
-	// cursor ı doğru yere getirdik. Kaldığı yerden kaç byte okuyablir i hesapladık. ancak buffer a en fazla 45 byte yazabildi.
-	// buffer içindeki şeyin sizeı yerine readable byte ları döndük.
+
 	int read_bytes = 0;
 
 	// TODO: read file.
@@ -260,7 +253,6 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 	FILE *fat_fd = fopen(fs->filename, "r+");
 	fseek(fat_fd, open_file->position, SEEK_SET);
 
-	//mini_file_seek(fs, open_file, 0, false);
 	int readable_size = size;
 	/* Read and display data */
 	if (size > open_file->file->size - open_file->position)
@@ -268,13 +260,12 @@ int mini_file_read(FAT_FILESYSTEM *fs, FAT_OPEN_FILE *open_file, const int size,
 		readable_size = open_file->file->size - open_file->position;
 	}
 
-	//fseek(fat_fd, 45, SEEK_SET);
+
 	fread(buffer, readable_size, 1, fat_fd);
 	mini_file_seek(fs, open_file, readable_size, false);
-	// open_file->position += size;
+
 	fclose(fat_fd);
 
-	//read_bytes = strlen((char *)buffer);
 
 
 	return readable_size;
@@ -345,9 +336,6 @@ bool mini_file_delete(FAT_FILESYSTEM *fs, const char *filename)
 			else
 			{
 				// Mark the blocks of a deleted file as empty on the filesystem.
-				//fs->files[i]->metadata_block_id = 0;
-				/// IMPORTANT
-
 				for(int j: fs->files[i]->block_ids)
 				{
 					fs->block_map[j] = 0;

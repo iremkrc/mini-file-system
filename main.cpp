@@ -231,7 +231,6 @@ void test_seek(FAT_FILESYSTEM * fs) {
 
 	printf("Reading 45 bytes from beginning file again.\n");
 	memset(buffer, 0, sizeof(buffer));
-	//!!!!!!!!!!!!!!!!!!!!!
 	res = mini_file_seek(fs, fd2, 0, true); // Seek to start
 	score(res);
 	read = mini_file_read(fs, fd2, 45, buffer);
@@ -277,7 +276,6 @@ void test_seek(FAT_FILESYSTEM * fs) {
 	printf("Current position of fd1: %d\n", fd1->position);
 	res = mini_file_seek(fs, fd1, -5, false);
 	memset(buffer, 0, sizeof(buffer));
-	// !!!
 	
 	read = mini_file_read(fs, fd1, 5, buffer);
 	score(read == 5);

@@ -126,7 +126,6 @@ FAT_FILESYSTEM * mini_fat_create(const char * filename, const int block_size, co
 	int disk_size = block_size * block_count;
 	FILE* virtual_disk = fopen(filename, "w");
 	fseek(virtual_disk, disk_size, SEEK_SET);
-	//fwrite(fat, 1, sizeof(fat), virtual_harddisk);
 	fputc('\0', virtual_disk);
 	fclose(virtual_disk);
 
@@ -160,8 +159,6 @@ bool mini_fat_save(const FAT_FILESYSTEM *fat) {
     for(int i : fat->block_map){
         fwrite(&i, sizeof(i), 1, fat_fd);
     }
-
-    
 
     for(int i = 0; i < fat->files.size(); i++){
         int metadata_id = fat->files[i]->metadata_block_id;
